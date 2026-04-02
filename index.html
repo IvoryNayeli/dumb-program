@@ -6,78 +6,76 @@
 <title>dumb-program</title>
 
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
 
-  body {
-    background: #000;
-    color: #c9d1d9;
-    font-family: monospace;
-    height: 100vh;
-    display: flex;
-    flex-direction: column;
-  }
+body {
+  background: #000;
+  color: #c9d1d9;
+  font-family: monospace;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
 
-  .terminal {
-    flex: 1;
-    padding: 16px;
-    overflow-y: auto;
-    font-size: 14px;
-    line-height: 1.6;
-  }
+.terminal {
+  flex: 1;
+  padding: 16px;
+  overflow-y: auto;
+  font-size: 13px;
+  line-height: 1.8;
+}
 
-  .line {
-    opacity: 0;
-    transform: translateY(4px);
-    transition: 0.2s;
-    white-space: pre-wrap;
-  }
+.line {
+  opacity: 0;
+  transform: translateY(4px);
+  transition: 0.2s;
+  white-space: pre;
+}
 
-  .visible {
-    opacity: 1;
-    transform: translateY(0);
-  }
+.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
 
-  .info { color: #58a6ff; }
-  .error { color: #f85149; }
-  .success { color: #3fb950; }
+.ts { color: #6e7681; }
+.info { color: #58a6ff; }
+.error { color: #f85149; }
+.success { color: #3fb950; }
 
-  .actions {
-    padding: 12px;
-    border-top: 1px solid #222;
-    display: flex;
-    justify-content: center;
-  }
+.progress {
+  height: 4px;
+  background: #21262d;
+  margin: 4px 0 10px 24ch;
+  border-radius: 2px;
+  overflow: hidden;
+}
 
-  button {
-    background: #238636;
-    border: none;
-    padding: 12px 18px;
-    border-radius: 8px;
-    color: white;
-    font-size: 14px;
-    cursor: pointer;
-    display: none;
-  }
+.progress-fill {
+  height: 100%;
+  background: #58a6ff;
+  width: 0%;
+  transition: width 0.1s linear;
+}
 
-  button.show {
-    display: block;
-  }
+.actions {
+  padding: 12px;
+  border-top: 1px solid #222;
+  text-align: center;
+}
 
-  button:active {
-    transform: scale(0.97);
-  }
+button {
+  background: #238636;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 8px;
+  color: white;
+  font-size: 14px;
+  display: none;
+}
 
-  .cursor {
-    display: inline-block;
-    width: 8px;
-    height: 14px;
-    background: #58a6ff;
-    animation: blink 1s infinite;
-  }
-
-  @keyframes blink {
-    50% { opacity: 0; }
-  }
+button.show {
+  display: inline-block;
+}
 </style>
 </head>
 
@@ -86,86 +84,116 @@
 <div class="terminal" id="terminal"></div>
 
 <div class="actions">
-  <button id="retryBtn" onclick="start()">Réessayer</button>
+  <button id="retryBtn" onclick="start()">Try again</button>
 </div>
 
 <script>
 
-const sequences = [
-  [
-    { type: "info", text: "Running program..." },
-    { type: "error", text: "TypeError: unsupported operand type(s) for +: 'me' and 'loneliness'" },
-    { type: "error", text: "Je pense que j’ai besoin de toi pour corriger ça." },
-  ],
-  [
-    { type: "info", text: "Retrying..." },
-    { type: "error", text: "AttributeError: 'heart' object has no attribute 'control'" },
-    { type: "error", text: "Depuis que je t’ai vu, c’est le chaos." },
-  ],
-  [
-    { type: "info", text: "Retrying..." },
-    { type: "error", text: "500 Internal Server Error" },
-    { type: "error", text: "Désolé, mon cœur bug quand tu me regardes." },
-  ],
-  [
-    { type: "info", text: "Retrying..." },
-    { type: "error", text: "403 Forbidden" },
-    { type: "error", text: "C’est interdit d’être aussi séduisant que toi ou quoi ?" },
-  ],
-  [
-    { type: "info", text: "Final attempt..." },
-    { type: "success", text: "Success: connection established" },
-    { type: "success", text: "On dirait que ça colle bien entre nous." },
-  ]
+const errorMessages = [
+  {
+    code: "TypeError",
+    text: "unsupported operand type(s) for +: 'me' and 'loneliness'",
+    punchline: "Je pense que j’ai besoin de toi pour corriger ça."
+  },
+  {
+    code: "AttributeError",
+    text: "'heart' object has no attribute 'control'",
+    punchline: "Depuis que je t’ai vu, c’est le chaos."
+  },
+  {
+    code: "500 Internal Server Error",
+    text: "",
+    punchline: "Désolé, mon cœur bug quand tu me regardes."
+  },
+  {
+    code: "403 Forbidden",
+    text: "",
+    punchline: "C’est interdit d’être aussi séduisant que toi ou quoi ?"
+  }
 ];
 
-let terminal = document.getElementById("terminal");
-let retryBtn = document.getElementById("retryBtn");
 let step = 0;
+
+function now() {
+  return new Date().toISOString().replace("T"," ").split(".")[0];
+}
 
 function sleep(ms) {
   return new Promise(r => setTimeout(r, ms));
 }
 
-async function printLine(text, type) {
+async function print(level, msg) {
   const line = document.createElement("div");
-  line.className = "line " + type;
-  line.textContent = text;
+  line.className = "line";
+  line.innerHTML =
+    `<span class="ts">[${now()}]</span> ` +
+    `<span class="${level.toLowerCase()}">${level.padEnd(5)}</span> ` +
+    `- ${msg}`;
+
   terminal.appendChild(line);
 
-  await sleep(50);
+  await sleep(30);
   line.classList.add("visible");
-
   terminal.scrollTop = terminal.scrollHeight;
 }
 
-async function runSequence(seq) {
-  retryBtn.classList.remove("show");
+async function progress(duration = 1200) {
+  const bar = document.createElement("div");
+  bar.className = "progress";
+  const fill = document.createElement("div");
+  fill.className = "progress-fill";
+  bar.appendChild(fill);
+  terminal.appendChild(bar);
 
-  for (let line of seq) {
-    await printLine(line.text, line.type);
-    await sleep(700);
+  let start = Date.now();
+
+  while (Date.now() - start < duration) {
+    let percent = ((Date.now() - start) / duration) * 100;
+    fill.style.width = percent + "%";
+    await sleep(30);
   }
 
-  // bouton apparaît sauf à la fin
-  if (step < sequences.length - 1) {
-    retryBtn.classList.add("show");
-  } else {
-    const cursor = document.createElement("div");
-    cursor.innerHTML = '<span class="cursor"></span>';
-    cursor.className = "line visible";
-    terminal.appendChild(cursor);
-  }
+  fill.style.width = "100%";
 }
 
 async function start() {
   terminal.innerHTML = "";
-  await runSequence(sequences[step]);
-  step++;
-  if (step >= sequences.length) step = 0;
+  retryBtn.classList.remove("show");
+
+  await print("INFO", "Initialisation du programme");
+  await sleep(400);
+
+  await print("INFO", "Chargement des modules...");
+  await progress(1200);
+
+  await print("INFO", "Connexion aux dépendances...");
+  await progress(1500);
+
+  await print("INFO", "Démarrage des services...");
+  await progress(1000);
+
+  await sleep(300);
+
+  // erreur ou succès
+  if (step < errorMessages.length) {
+    const err = errorMessages[step];
+
+    await print("ERROR", `${err.code}${err.text ? ": " + err.text : ""}`);
+    await sleep(400);
+    await print("ERROR", err.punchline);
+
+    retryBtn.classList.add("show");
+    step++;
+
+  } else {
+    await print("SUCCESS", "Success: connection established");
+    await sleep(400);
+    await print("SUCCESS", "On dirait que ça colle bien entre nous.");
+
+    step = 0;
+  }
 }
 
-// lancement auto au chargement
 start();
 
 </script>
