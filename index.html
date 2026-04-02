@@ -30,12 +30,12 @@
     align-items: center;
     justify-content: center;
     font-family: 'JetBrains Mono', 'Cascadia Code', 'Fira Code', monospace;
-    padding: 8px;
+    padding: 14px;
   }
 
   .window {
-    width: min(680px, calc(100vw - 16px));
-    height: calc(100dvh - 16px);
+    width: min(660px, calc(100vw - 28px));
+    height: calc(100dvh - 28px);
     max-height: 760px;
     background: var(--window-bg);
     border: 1px solid var(--border);
@@ -263,37 +263,58 @@
 
   .btn {
     display: none;
-    background: rgba(137,180,250,0.1);
-    border: 1px solid rgba(137,180,250,0.25);
-    padding: 6px 14px;
+    background: rgba(137,180,250,0.18);
+    border: 1px solid rgba(137,180,250,0.55);
+    padding: 7px 16px;
     border-radius: 5px;
     color: var(--blue);
     font-family: inherit;
-    font-size: 12px;
+    font-size: 13px;
+    font-weight: 700;
     cursor: pointer;
-    transition: background 0.15s, border-color 0.15s;
+    transition: background 0.15s, border-color 0.15s, transform 0.15s;
     letter-spacing: 0.03em;
+    box-shadow: 0 0 0 1px rgba(137,180,250,0.2) inset;
   }
 
   .btn:hover {
-    background: rgba(137,180,250,0.18);
-    border-color: rgba(137,180,250,0.45);
+    background: rgba(137,180,250,0.28);
+    border-color: rgba(137,180,250,0.8);
+    transform: translateY(-1px);
   }
 
   .btn::before { content: "$ "; opacity: 0.5; }
-  .btn.show { display: inline-block; }
+  .btn.show {
+    display: inline-block;
+    animation: ctaPulse 1.4s ease-in-out infinite;
+  }
+
+  @keyframes ctaPulse {
+    0%, 100% { box-shadow: 0 0 0 1px rgba(137,180,250,0.2) inset, 0 0 0 rgba(137,180,250,0.45); }
+    50% { box-shadow: 0 0 0 1px rgba(137,180,250,0.45) inset, 0 0 18px rgba(137,180,250,0.35); }
+  }
+
+  .attempt-sep {
+    color: var(--muted);
+    font-size: 11px;
+    line-height: 1.5;
+    margin: 10px 0 6px;
+    white-space: pre;
+    overflow: hidden;
+    text-overflow: clip;
+  }
 
   /* ── MOBILE ── */
   @media (max-width: 480px) {
     html, body {
-      padding: 6px;
+      padding: 10px;
       align-items: center;
       justify-content: center;
     }
 
     .window {
-      width: calc(100vw - 12px);
-      height: calc(100dvh - 12px);
+      width: calc(100vw - 20px);
+      height: calc(100dvh - 20px);
       border-radius: 8px;
     }
 
@@ -390,6 +411,25 @@ function fullStatusLine(label) {
   return "=".repeat(left) + core + "=".repeat(right);
 }
 
+function separatorLine(label) {
+  const cols = estimateCols();
+  const core = ` ${label} `;
+  const fill = Math.max(0, cols - core.length);
+  const left = Math.floor(fill / 2);
+  const right = fill - left;
+  return "-".repeat(left) + core + "-".repeat(right);
+}
+
+async function attemptSeparator(n) {
+  if (terminal.childElementCount <= 1) return;
+  const el = document.createElement("div");
+  el.className = "attempt-sep";
+  el.textContent = separatorLine(`attempt ${n}`);
+  ins(el);
+  terminal.scrollTop = terminal.scrollHeight;
+  await sleep(120);
+}
+
 async function promptLine(text) {
   const el = document.createElement("div");
   el.className = "cmd-line";
@@ -397,7 +437,7 @@ async function promptLine(text) {
     `<span class="cmd-prompt">$</span>` +
     `<span class="cmd-text">${text}</span>`;
   ins(el);
-  await sleep(20);
+  await sleep(35);
   el.classList.add("visible");
   terminal.scrollTop = terminal.scrollHeight;
 }
@@ -410,7 +450,7 @@ async function log(level, msg) {
     `<span class="badge badge-${level}">${level}</span>` +
     `<span class="msg">${msg}</span>`;
   ins(el);
-  await sleep(20);
+  await sleep(35);
   el.classList.add("visible");
   terminal.scrollTop = terminal.scrollHeight;
 }
@@ -436,7 +476,7 @@ async function progress(duration, failAtPct = null) {
   row.appendChild(pctEl);
   ins(row);
 
-  await sleep(20);
+  await sleep(35);
   row.classList.add("visible");
 
   const start = Date.now();
@@ -452,7 +492,7 @@ async function progress(duration, failAtPct = null) {
       return false;
     }
     if (pct >= 100) break;
-    await sleep(40);
+    await sleep(65);
   }
   pctEl.textContent = "OK";
   pctEl.classList.add("ok");
@@ -469,7 +509,7 @@ async function statusLine(success) {
 }
 
 async function punchline(text, success) {
-  await sleep(350);
+  await sleep(520);
   const cls = success ? "ok" : "err";
   const el  = document.createElement("div");
   el.className = "punchline";
@@ -477,7 +517,7 @@ async function punchline(text, success) {
     `<span class="punchline-icon ${cls}">${success ? "✓" : "✗"}</span>` +
     `<span class="punchline-text ${cls}">${text}</span>`;
   ins(el);
-  await sleep(30);
+  await sleep(50);
   el.classList.add("visible");
   terminal.scrollTop = terminal.scrollHeight;
 }
@@ -491,23 +531,23 @@ async function runAttempt() {
   const n = attempt + 1;
   const failingStep = attempt < errors.length ? attempt : -1;
 
+  await attemptSeparator(n);
   await promptLine(`./dumb-program --attempt ${n}`);
-  await log("INFO", `Tentative ${n}/${TOTAL}`);
-  await sleep(180);
+  await sleep(280);
 
   for (let i = 0; i < steps.length; i++) {
     await log("INFO", steps[i]);
     const shouldFail = i === failingStep;
     const ok = await progress(
-      850 + Math.random() * 550,
+      1300 + Math.random() * 700,
       shouldFail ? Math.round(35 + Math.random() * 45) : null
     );
 
     if (!ok) {
       const err = errors[failingStep];
-      await sleep(180);
-      await log("ERROR", `${err.code}: ${err.text}`);
       await statusLine(false);
+      await sleep(220);
+      await log("ERROR", `${err.code}: ${err.text}`);
       cursor.classList.remove("visible");
       await punchline(err.punchline, false);
 
@@ -518,9 +558,10 @@ async function runAttempt() {
     }
   }
 
-  await sleep(280);
-  await log("SUCCESS", "connection established — all systems nominal");
+  await sleep(320);
   await statusLine(true);
+  await sleep(220);
+  await log("SUCCESS", "connection established — all systems nominal");
   cursor.classList.remove("visible");
   await punchline("On dirait que ça colle bien entre nous.", true);
 
