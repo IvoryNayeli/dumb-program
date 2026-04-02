@@ -1,77 +1,219 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>dumb-program IDE</title>
 
 <style>
-  .term { background: #0d1117; border-radius: var(--border-radius-lg); padding: 1.25rem 1.5rem; font-family: var(--font-mono); font-size: 13px; line-height: 2; }
-  .bar { display: flex; gap: 6px; margin-bottom: 1rem; }
-  .dot { width: 12px; height: 12px; border-radius: 50%; }
-  .log-line { display: flex; gap: 0; white-space: pre; }
-  .ts { color: #6e7681; }
-  .lvl-info { color: #58a6ff; font-weight: 500; }
-  .lvl-error { color: #f85149; font-weight: 500; }
-  .msg { color: #c9d1d9; }
-  .cursor { display: inline-block; width: 8px; height: 14px; background: #58a6ff; animation: blink 1s step-end infinite; vertical-align: middle; margin-left: 2px; }
-  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
-  .progress-bar { height: 2px; background: #21262d; border-radius: 1px; margin: 4px 0 0 22.5ch; overflow: hidden; }
-  .progress-fill { height: 100%; background: #58a6ff; width: 0; transition: width 0.05s linear; }
-</style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
 
-<div class="term">
-  <div class="bar">
-    <div class="dot" style="background:#ff5f57"></div>
-    <div class="dot" style="background:#febc2e"></div>
-    <div class="dot" style="background:#28c840"></div>
-    <span style="color:#6e7681; font-size:12px; margin-left:8px;">terminal — bash</span>
+  body {
+    background: #0d1117;
+    height: 100vh;
+    display: flex;
+    font-family: 'SF Mono', monospace;
+    color: #c9d1d9;
+  }
+
+  /* Sidebar */
+  .sidebar {
+    width: 60px;
+    background: #010409;
+    border-right: 1px solid #30363d;
+  }
+
+  /* Main */
+  .main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Top bar */
+  .topbar {
+    height: 40px;
+    background: #161b22;
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    border-bottom: 1px solid #30363d;
+    justify-content: space-between;
+  }
+
+  .tabs {
+    display: flex;
+    gap: 8px;
+  }
+
+  .tab {
+    background: #0d1117;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    border: 1px solid #30363d;
+  }
+
+  .run-btn {
+    background: #238636;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 6px;
+    color: white;
+    cursor: pointer;
+    font-size: 12px;
+  }
+
+  .run-btn:hover {
+    background: #2ea043;
+  }
+
+  /* Editor + terminal */
+  .content {
+    display: flex;
+    flex: 1;
+  }
+
+  .editor {
+    flex: 1;
+    padding: 20px;
+    color: #6e7681;
+  }
+
+  .terminal {
+    width: 50%;
+    background: #010409;
+    border-left: 1px solid #30363d;
+    padding: 16px;
+    font-size: 13px;
+    overflow: hidden;
+  }
+
+  .log-line {
+    opacity: 0;
+    transform: translateY(4px);
+    transition: 0.2s;
+    white-space: pre;
+  }
+
+  .visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .info { color: #58a6ff; }
+  .error { color: #f85149; }
+  .success { color: #3fb950; }
+
+  .cursor {
+    display: inline-block;
+    width: 8px;
+    height: 14px;
+    background: #58a6ff;
+    animation: blink 1s infinite;
+  }
+
+  @keyframes blink {
+    50% { opacity: 0; }
+  }
+</style>
+</head>
+
+<body>
+
+<div class="sidebar"></div>
+
+<div class="main">
+
+  <div class="topbar">
+    <div class="tabs">
+      <div class="tab">main.py</div>
+      <div class="tab">terminal</div>
+    </div>
+    <button class="run-btn" onclick="start()">▶ Run</button>
   </div>
-  <div id="logs"></div>
+
+  <div class="content">
+    <div class="editor">
+<pre>
+def fix_life():
+    me = "loneliness"
+    you = "❤️"
+
+    return me + you
+</pre>
+    </div>
+
+    <div class="terminal" id="terminal"></div>
+  </div>
 </div>
 
 <script>
-const logs = [
-  { ts: "2026-04-02 11:05:23", level: "INFO ", msg: "Initialisation du programme", delay: 400 },
-  { ts: "2026-04-02 11:05:23", level: "INFO ", msg: "Chargement des modules essentiels...", delay: 800, progress: true },
-  { ts: "2026-04-02 11:05:25", level: "INFO ", msg: "Connexion à la base de données...", delay: 2800, progress: true },
-  { ts: "2026-04-02 11:05:28", level: "ERROR", msg: "Le programme s'est arrêté de manière inattendue", delay: 5400 },
-  { ts: "2026-04-02 11:05:28", level: "ERROR", msg: "Erreur 504 : Oups, mon cerveau a crashé quand j'ai pensé à toi 💥🫣", delay: 5900 },
+
+const sequences = [
+  [
+    { type: "info", text: "Running program..." },
+    { type: "error", text: "TypeError: unsupported operand type(s) for +: 'me' and 'loneliness'" },
+    { type: "error", text: "Je pense que j’ai besoin de toi pour corriger ça." },
+  ],
+  [
+    { type: "info", text: "Retrying..." },
+    { type: "error", text: "AttributeError: 'heart' object has no attribute 'control'" },
+    { type: "error", text: "Depuis que je t’ai vu, c’est le chaos." },
+  ],
+  [
+    { type: "info", text: "Retrying..." },
+    { type: "error", text: "500 Internal Server Error" },
+    { type: "error", text: "Désolé, mon cœur bug quand tu me regardes." },
+  ],
+  [
+    { type: "info", text: "Retrying..." },
+    { type: "error", text: "403 Forbidden" },
+    { type: "error", text: "C’est interdit d’être aussi séduisant que toi ou quoi ?" },
+  ],
+  [
+    { type: "info", text: "Final attempt..." },
+    { type: "success", text: "Success: connection established" },
+    { type: "success", text: "On dirait que ça colle bien entre nous." },
+  ]
 ];
 
-const container = document.getElementById('logs');
-let totalDelay = 0;
+let terminal = document.getElementById("terminal");
 
-logs.forEach((log, i) => {
-  totalDelay += log.delay;
-  setTimeout(() => {
-    const line = document.createElement('div');
-    line.className = 'log-line';
-    const lvlClass = log.level.trim() === 'INFO' ? 'lvl-info' : 'lvl-error';
-    const pad = log.level === 'INFO ' ? '     ' : '    ';
-    line.innerHTML = `<span class="ts">[${log.ts}]</span><span class="${lvlClass}"> ${log.level}</span><span class="msg"> - ${log.msg}</span>`;
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
 
-    if (log.progress) {
-      const pb = document.createElement('div');
-      pb.className = 'progress-bar';
-      const fill = document.createElement('div');
-      fill.className = 'progress-fill';
-      pb.appendChild(fill);
-      container.appendChild(line);
-      container.appendChild(pb);
-      let w = 0;
-      const nextDelay = (logs[i+1] ? logs[i+1].delay : 500);
-      const steps = 60;
-      const interval = nextDelay / steps;
-      const timer = setInterval(() => {
-        w += 100/steps;
-        fill.style.width = Math.min(w, 100) + '%';
-        if (w >= 100) clearInterval(timer);
-      }, interval);
-    } else {
-      container.appendChild(line);
+async function printLine(text, type) {
+  const line = document.createElement("div");
+  line.className = "log-line " + type;
+  line.textContent = text;
+  terminal.appendChild(line);
+
+  await sleep(50);
+  line.classList.add("visible");
+
+  terminal.scrollTop = terminal.scrollHeight;
+}
+
+async function start() {
+  terminal.innerHTML = "";
+
+  for (let seq of sequences) {
+    for (let line of seq) {
+      await printLine(line.text, line.type);
+      await sleep(800);
     }
+    await sleep(1000);
+  }
 
-    if (i === logs.length - 1) {
-      const cur = document.createElement('div');
-      cur.className = 'log-line';
-      cur.innerHTML = `<span class="ts">                        </span><span class="cursor"></span>`;
-      container.appendChild(cur);
-    }
-  }, totalDelay);
-});
+  const cursor = document.createElement("div");
+  cursor.className = "log-line visible";
+  cursor.innerHTML = '<span class="cursor"></span>';
+  terminal.appendChild(cursor);
+}
+
 </script>
+
+</body>
+</html>
