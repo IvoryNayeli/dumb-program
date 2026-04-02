@@ -48,6 +48,8 @@
       0 24px 80px rgba(0,0,0,0.6);
   }
 
+  .hidden { display: none !important; }
+
   /* ── TITLE BAR ── */
   .titlebar {
     background: var(--titlebar);
@@ -304,6 +306,31 @@
     text-overflow: clip;
   }
 
+  .launcher-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    padding: 20px;
+    text-align: center;
+  }
+
+  .launcher-title {
+    color: var(--text);
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+  }
+
+  .launcher-sub {
+    color: var(--muted);
+    font-size: 12px;
+    max-width: 40ch;
+    line-height: 1.5;
+  }
+
   /* ── MOBILE ── */
   @media (max-width: 480px) {
     html, body {
@@ -327,7 +354,24 @@
 </head>
 
 <body>
-<div class="window">
+<div class="window" id="launcherView">
+  <div class="titlebar">
+    <div class="dots">
+      <div class="dot dot-r"></div>
+      <div class="dot dot-y"></div>
+      <div class="dot dot-g"></div>
+    </div>
+    <div class="title-label">bash — disquette-factory</div>
+  </div>
+
+  <div class="launcher-body">
+    <div class="launcher-title">disquette-factory</div>
+    <div class="launcher-sub">Pret a lancer la generation de disquettes de drague.</div>
+    <button class="btn show" id="launchBtn" onclick="launchProgram()">start</button>
+  </div>
+</div>
+
+<div class="window hidden" id="terminalView">
   <div class="titlebar">
     <div class="dots">
       <div class="dot dot-r"></div>
@@ -342,12 +386,15 @@
   </div>
 
   <div class="actions">
-    <button class="btn show" id="retryBtn" onclick="runAttempt()">start</button>
+    <button class="btn" id="retryBtn" onclick="runAttempt()">retry</button>
   </div>
 </div>
 
 <script>
+const launcherView = document.getElementById("launcherView");
+const terminalView = document.getElementById("terminalView");
 const terminal = document.getElementById("terminal");
+const launchBtn = document.getElementById("launchBtn");
 const retryBtn = document.getElementById("retryBtn");
 const cursor   = document.getElementById("cursor");
 
@@ -364,7 +411,7 @@ const steps = [
 ];
 
 const errors = [
-  { code: "403 Forbidden",            text: "",                                                punchline: "C'est interdit d'etre aussi seduisant que toi ici ou quoi ? 😏❤️" },
+  { code: "403 Forbidden",            text: "access denied",                                                punchline: "C'est interdit d'etre aussi seduisant que toi ici ou quoi ? 😏❤️" },
   { code: "TypeError",                text: "unsupported operand type(s) for +: 'me' and 'loneliness'", punchline: "Je pense que j'ai besoin de toi pour corriger ca. 😘" },
   { code: "500 Internal Server Error", text: "unexpected input",                                         punchline: "Désolée, mon cerveau bug quand je pense à toi. 😏❤️😘" },
   { code: "AttributeError",           text: "'My_Heart' object has no attribute 'control'",                punchline: "Depuis que je t'ai vu, c'est le chaos là-dedans. ❤️‍🔥" }
@@ -418,7 +465,7 @@ function separatorLine() {
   return "-".repeat(cols);
 }
 
-async function attemptSeparator(n) {
+async function attemptSeparator() {
   if (terminal.childElementCount <= 1) return;
   const el = document.createElement("div");
   el.className = "attempt-sep";
@@ -523,7 +570,7 @@ async function runAttempt() {
     ? Math.round(ATTEMPT_BUDGET_MS / (failingStep + FAIL_PROGRESS_PCT / 100))
     : Math.round(ATTEMPT_BUDGET_MS / steps.length);
 
-  await attemptSeparator(n);
+  await attemptSeparator();
   await promptLine(`./disquette-factory --tentative ${n}`);
   await sleep(420);
 
@@ -562,7 +609,12 @@ async function runAttempt() {
   setButton("start");
 }
 
-setButton("start");
+function launchProgram() {
+  launchBtn.classList.remove("show");
+  launcherView.classList.add("hidden");
+  terminalView.classList.remove("hidden");
+  runAttempt();
+}
 </script>
 </body>
 </html>
