@@ -1,99 +1,35 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>dumb-program IDE</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>dumb-program</title>
 
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
 
   body {
-    background: #0d1117;
-    height: 100vh;
-    display: flex;
-    font-family: 'SF Mono', monospace;
+    background: #000;
     color: #c9d1d9;
-  }
-
-  /* Sidebar */
-  .sidebar {
-    width: 60px;
-    background: #010409;
-    border-right: 1px solid #30363d;
-  }
-
-  /* Main */
-  .main {
-    flex: 1;
+    font-family: monospace;
+    height: 100vh;
     display: flex;
     flex-direction: column;
   }
 
-  /* Top bar */
-  .topbar {
-    height: 40px;
-    background: #161b22;
-    display: flex;
-    align-items: center;
-    padding: 0 12px;
-    border-bottom: 1px solid #30363d;
-    justify-content: space-between;
-  }
-
-  .tabs {
-    display: flex;
-    gap: 8px;
-  }
-
-  .tab {
-    background: #0d1117;
-    padding: 6px 10px;
-    border-radius: 6px;
-    font-size: 12px;
-    border: 1px solid #30363d;
-  }
-
-  .run-btn {
-    background: #238636;
-    border: none;
-    padding: 6px 12px;
-    border-radius: 6px;
-    color: white;
-    cursor: pointer;
-    font-size: 12px;
-  }
-
-  .run-btn:hover {
-    background: #2ea043;
-  }
-
-  /* Editor + terminal */
-  .content {
-    display: flex;
-    flex: 1;
-  }
-
-  .editor {
-    flex: 1;
-    padding: 20px;
-    color: #6e7681;
-  }
-
   .terminal {
-    width: 50%;
-    background: #010409;
-    border-left: 1px solid #30363d;
+    flex: 1;
     padding: 16px;
-    font-size: 13px;
-    overflow: hidden;
+    overflow-y: auto;
+    font-size: 14px;
+    line-height: 1.6;
   }
 
-  .log-line {
+  .line {
     opacity: 0;
     transform: translateY(4px);
     transition: 0.2s;
-    white-space: pre;
+    white-space: pre-wrap;
   }
 
   .visible {
@@ -104,6 +40,32 @@
   .info { color: #58a6ff; }
   .error { color: #f85149; }
   .success { color: #3fb950; }
+
+  .actions {
+    padding: 12px;
+    border-top: 1px solid #222;
+    display: flex;
+    justify-content: center;
+  }
+
+  button {
+    background: #238636;
+    border: none;
+    padding: 12px 18px;
+    border-radius: 8px;
+    color: white;
+    font-size: 14px;
+    cursor: pointer;
+    display: none;
+  }
+
+  button.show {
+    display: block;
+  }
+
+  button:active {
+    transform: scale(0.97);
+  }
 
   .cursor {
     display: inline-block;
@@ -121,31 +83,10 @@
 
 <body>
 
-<div class="sidebar"></div>
+<div class="terminal" id="terminal"></div>
 
-<div class="main">
-
-  <div class="topbar">
-    <div class="tabs">
-      <div class="tab">main.py</div>
-      <div class="tab">terminal</div>
-    </div>
-    <button class="run-btn" onclick="start()">▶ Run</button>
-  </div>
-
-  <div class="content">
-    <div class="editor">
-<pre>
-def fix_life():
-    me = "loneliness"
-    you = "❤️"
-
-    return me + you
-</pre>
-    </div>
-
-    <div class="terminal" id="terminal"></div>
-  </div>
+<div class="actions">
+  <button id="retryBtn" onclick="start()">Réessayer</button>
 </div>
 
 <script>
@@ -179,14 +120,16 @@ const sequences = [
 ];
 
 let terminal = document.getElementById("terminal");
+let retryBtn = document.getElementById("retryBtn");
+let step = 0;
 
 function sleep(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
+  return new Promise(r => setTimeout(r, ms));
 }
 
 async function printLine(text, type) {
   const line = document.createElement("div");
-  line.className = "log-line " + type;
+  line.className = "line " + type;
   line.textContent = text;
   terminal.appendChild(line);
 
@@ -196,22 +139,34 @@ async function printLine(text, type) {
   terminal.scrollTop = terminal.scrollHeight;
 }
 
-async function start() {
-  terminal.innerHTML = "";
+async function runSequence(seq) {
+  retryBtn.classList.remove("show");
 
-  for (let seq of sequences) {
-    for (let line of seq) {
-      await printLine(line.text, line.type);
-      await sleep(800);
-    }
-    await sleep(1000);
+  for (let line of seq) {
+    await printLine(line.text, line.type);
+    await sleep(700);
   }
 
-  const cursor = document.createElement("div");
-  cursor.className = "log-line visible";
-  cursor.innerHTML = '<span class="cursor"></span>';
-  terminal.appendChild(cursor);
+  // bouton apparaît sauf à la fin
+  if (step < sequences.length - 1) {
+    retryBtn.classList.add("show");
+  } else {
+    const cursor = document.createElement("div");
+    cursor.innerHTML = '<span class="cursor"></span>';
+    cursor.className = "line visible";
+    terminal.appendChild(cursor);
+  }
 }
+
+async function start() {
+  terminal.innerHTML = "";
+  await runSequence(sequences[step]);
+  step++;
+  if (step >= sequences.length) step = 0;
+}
+
+// lancement auto au chargement
+start();
 
 </script>
 
