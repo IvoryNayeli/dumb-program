@@ -21,18 +21,18 @@ body {
 /* TERMINAL */
 .terminal {
   flex: 1;
-  padding: 12px;
+  padding: 8px;
   overflow-y: auto;
-  font-size: 13px;
-  line-height: 1.5;
+  font-size: 12px;
+  line-height: 1.4;
 }
 
 /* LIGNE */
 .line {
   display: flex;
-  gap: 6px;
+  gap: 4px;
   opacity: 0;
-  transform: translateY(2px);
+  transform: translateY(1px);
   transition: all 0.2s ease;
   flex-wrap: wrap;
 }
@@ -42,13 +42,15 @@ body {
 .ts {
   color: #6e7681;
   flex-shrink: 0;
-  width: 10ch;
+  width: 8ch; /* plus compacte */
+  font-size: 11px;
 }
 
 .level {
   flex-shrink: 0;
   font-weight: 500;
-  width: 8ch;
+  width: 6ch;
+  font-size: 11px;
 }
 
 .info { color: #58a6ff; }
@@ -59,27 +61,27 @@ body {
 
 /* PROGRESS */
 .progress {
-  height: 4px;
+  height: 3px;
   background: #21262d;
   border-radius: 2px;
   overflow: hidden;
-  margin: 4px 0 8px;
+  margin: 3px 0 6px;
 }
 
 .progress-fill { height: 100%; background: #58a6ff; width: 0%; }
 
 /* PUNCHLINE FINALE */
 .punchline {
-  margin-top: 12px;
+  margin-top: 16px;
   color: #f85149;
   font-weight: 600;
-  font-size: 14px;
+  font-size: 13px;
   text-align: center;
 }
 
 /* BUTTON STICKY */
 .actions {
-  padding: 12px;
+  padding: 8px;
   border-top: 1px solid #222;
   display: flex;
   justify-content: center;
@@ -92,10 +94,10 @@ body {
 button {
   background: #238636;
   border: none;
-  padding: 12px 20px;
-  border-radius: 8px;
+  padding: 10px 16px;
+  border-radius: 6px;
   color: white;
-  font-size: 14px;
+  font-size: 13px;
   display: none;
 }
 
@@ -114,6 +116,12 @@ button.show { display: inline-block; cursor: pointer; }
 <script>
 const terminal = document.getElementById("terminal");
 const retryBtn = document.getElementById("retryBtn");
+
+const attempts = [
+  ["Initialisation du programme", "Chargement des modules essentiels...", "Connexion aux services...", "Démarrage des dépendances..."],
+  ["Initialisation du moteur", "Chargement des plugins...", "Connexion à la base...", "Démarrage des services..."],
+  ["Boot du système", "Chargement des modules...", "Connexion réseau...", "Vérification des dépendances..."]
+];
 
 const errorMessages = [
   { code: "TypeError", text: "unsupported operand type(s) for +: 'me' and 'loneliness'", punchline: "Je pense que j’ai besoin de toi pour corriger ça." },
@@ -145,7 +153,7 @@ async function print(level, msg) {
   terminal.scrollTop = terminal.scrollHeight;
 }
 
-async function progress(duration = 1200) {
+async function progress(duration = 1000) {
   const bar = document.createElement("div");
   bar.className = "progress";
   const fill = document.createElement("div");
@@ -176,14 +184,13 @@ async function start() {
   terminal.innerHTML = "";
   retryBtn.classList.remove("show");
 
-  await print("INFO", "Initialisation du programme");
-  await sleep(300);
-  await print("INFO", "Chargement des modules...");
-  await progress(1200);
-  await print("INFO", "Connexion aux dépendances...");
-  await progress(1500);
-  await print("INFO", "Démarrage des services...");
-  await progress(1000);
+  // choix des messages de chargement selon la tentative
+  const msgs = attempts[step % attempts.length];
+
+  for (let msg of msgs) {
+    await print("INFO", msg);
+    await progress(1000 + Math.random() * 800);
+  }
 
   await sleep(300);
 
