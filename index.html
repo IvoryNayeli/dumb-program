@@ -353,6 +353,8 @@ const cursor   = document.getElementById("cursor");
 
 const TOTAL   = 5;   // 4 erreurs + 1 succès
 const BAR_W   = 20;
+const ATTEMPT_BUDGET_MS = 10000;
+const FAIL_PROGRESS_PCT = 55;
 
 const steps = [
   "init",
@@ -362,10 +364,10 @@ const steps = [
 ];
 
 const errors = [
-  { code: "403 Forbidden",            text: "forbidden",                                                punchline: "C'est interdit d'etre aussi seduisant que toi ou quoi ? 😏❤️" },
-  { code: "TypeError",                text: "unsupported operand type(s) for +: 'me' and 'loneliness'", punchline: "Je pense que j'ai besoin de toi pour corriger ca. ✨❤️" },
-  { code: "500 Internal Server Error", text: "unexpected input",                                         punchline: "Desolee, mon coeur bug quand tu me regardes. 💥❤️" },
-  { code: "AttributeError",           text: "'heart' object has no attribute 'control'",                punchline: "Depuis que je t'ai vu, c'est le chaos ici. 😏✨" }
+  { code: "403 Forbidden",            text: "",                                                punchline: "C'est interdit d'etre aussi seduisant que toi ici ou quoi ? 😏❤️" },
+  { code: "TypeError",                text: "unsupported operand type(s) for +: 'me' and 'loneliness'", punchline: "Je pense que j'ai besoin de toi pour corriger ca. 😘" },
+  { code: "500 Internal Server Error", text: "unexpected input",                                         punchline: "Désolée, mon cerveau bug quand je pense à toi. 😏❤️😘" },
+  { code: "AttributeError",           text: "'My_Heart' object has no attribute 'control'",                punchline: "Depuis que je t'ai vu, c'est le chaos là-dedans. ❤️‍🔥" }
 ];
 
 let attempt = 0;
@@ -517,6 +519,9 @@ async function runAttempt() {
 
   const n = attempt + 1;
   const failingStep = attempt < errors.length ? attempt : -1;
+  const stepDuration = failingStep >= 0
+    ? Math.round(ATTEMPT_BUDGET_MS / (failingStep + FAIL_PROGRESS_PCT / 100))
+    : Math.round(ATTEMPT_BUDGET_MS / steps.length);
 
   await attemptSeparator(n);
   await promptLine(`./disquette-factory --tentative ${n}`);
@@ -526,8 +531,8 @@ async function runAttempt() {
     await log("INFO", steps[i]);
     const shouldFail = i === failingStep;
     const ok = await progress(
-      3200 + Math.random() * 1800,
-      shouldFail ? Math.round(35 + Math.random() * 45) : null
+      stepDuration,
+      shouldFail ? FAIL_PROGRESS_PCT : null
     );
 
     if (!ok) {
@@ -548,9 +553,9 @@ async function runAttempt() {
   await sleep(520);
   await statusLine(true);
   await sleep(380);
-  await log("SUCCESS", "connexion etablie 😏✨");
+  await log("SUCCESS", "Connexion etablie");
   cursor.classList.remove("visible");
-  await punchline("On dirait que ça colle bien entre nous.", true);
+  await punchline("On dirait que ça colle bien entre nous. 😏✨", true);
 
   attempt = 0;
   running = false;
