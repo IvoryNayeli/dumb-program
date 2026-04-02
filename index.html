@@ -441,7 +441,8 @@ const steps = [
   "init",
   "charge",
   "sync",
-  "run"
+  "run",
+  "done"
 ];
 
 const errors = [
@@ -617,7 +618,7 @@ async function runAttempt() {
     );
 
     if (!ok) {
-      const err = errors[failingStep];
+      const err = errors[attempt];
       await statusLine(false);
       await sleep(80);
       await log("ERROR", `${err.code}: ${err.text}`);
