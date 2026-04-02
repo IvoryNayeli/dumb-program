@@ -400,8 +400,8 @@ const cursor   = document.getElementById("cursor");
 
 const TOTAL   = 5;   // 4 erreurs + 1 succès
 const BAR_W   = 20;
-const ATTEMPT_BUDGET_MS = 10000;
-const FAIL_PROGRESS_PCT = 55;
+const ATTEMPT_BUDGET_MS = 7000;
+const FAIL_PROGRESS_PCT = 45;
 
 const steps = [
   "init",
@@ -572,7 +572,7 @@ async function runAttempt() {
 
   await attemptSeparator();
   await promptLine(`./disquette-factory --tentative ${n}`);
-  await sleep(420);
+  await sleep(260);
 
   for (let i = 0; i < steps.length; i++) {
     await log("INFO", steps[i]);
@@ -585,7 +585,7 @@ async function runAttempt() {
     if (!ok) {
       const err = errors[failingStep];
       await statusLine(false);
-      await sleep(380);
+      await sleep(180);
       await log("ERROR", `${err.code}: ${err.text}`);
       cursor.classList.remove("visible");
       await punchline(err.punchline, false);
