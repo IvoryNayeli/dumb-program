@@ -449,7 +449,7 @@ const errors = [
   { code: "403 Forbidden",            text: "access denied",                                                punchline: "C'est interdit aux gens aussi séduisants que toi ici ou quoi ? 😏❤️" },
   { code: "TypeError",                text: "unsupported operand type(s) for +: 'me' and 'loneliness'", punchline: "Peut-être qu'il manque juste toi dans l'équation. 😏❤️" },
   { code: "500 Internal Server Error", text: "unexpected input",                                         punchline: "Désolée, mon cerveau a crashé quand j'ai pensé à toi. 😏❤️" },
-  { code: "503 Service Unavailable",  text: "server busy",                                                 punchline: "Occupée … mais jamais trop pour toi. 😏❤️" }
+  { code: "503 Service Unavailable",  text: "server busy",                                                 punchline: "Occupée… mais jamais trop pour toi. 😏❤️" }
 ];
 
 let attempt = 0;
@@ -599,13 +599,17 @@ async function runAttempt() {
   hideButton();
   cursor.classList.remove("visible");
 
+  while (terminal.firstChild && terminal.firstChild !== cursor) {
+    terminal.removeChild(terminal.firstChild);
+  }
+  terminal.scrollTop = 0;
+
   const n = attempt + 1;
   const failingStep = attempt < errors.length ? Math.min(attempt + 1, steps.length - 1) : -1;
   const stepDuration = failingStep >= 0
     ? Math.round(ATTEMPT_BUDGET_MS / (failingStep + FAIL_PROGRESS_PCT / 100))
     : Math.round(ATTEMPT_BUDGET_MS / steps.length);
 
-  await attemptSeparator();
   await promptLine(`./disquette-factory --tentative ${n}`);
   await sleep(60);
 
@@ -637,7 +641,7 @@ async function runAttempt() {
   await sleep(380);
   await log("SUCCESS", "Connexion etablie");
   cursor.classList.remove("visible");
-  await punchline("On dirait que ça colle bien entre nous. ❤️", true);
+  await punchline("On dirait que ça colle bien entre nous. 🔥❤️", true);
 
   attempt = 0;
   running = false;
