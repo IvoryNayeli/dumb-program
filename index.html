@@ -439,9 +439,9 @@ const FAIL_PROGRESS_PCT = 22;
 
 const steps = [
   "init",
-  "modules",
-  "connexion",
-  "services"
+  "charge",
+  "sync",
+  "run"
 ];
 
 const errors = [
@@ -599,7 +599,7 @@ async function runAttempt() {
   cursor.classList.remove("visible");
 
   const n = attempt + 1;
-  const failingStep = attempt < errors.length ? attempt : -1;
+  const failingStep = attempt < errors.length ? Math.min(attempt + 1, steps.length - 1) : -1;
   const stepDuration = failingStep >= 0
     ? Math.round(ATTEMPT_BUDGET_MS / (failingStep + FAIL_PROGRESS_PCT / 100))
     : Math.round(ATTEMPT_BUDGET_MS / steps.length);
@@ -640,7 +640,7 @@ async function runAttempt() {
 
   attempt = 0;
   running = false;
-  setButton("start");
+  hideButton();
 }
 
 function launchProgram() {
