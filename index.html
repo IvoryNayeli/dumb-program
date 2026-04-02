@@ -1,1 +1,77 @@
 
+<style>
+  .term { background: #0d1117; border-radius: var(--border-radius-lg); padding: 1.25rem 1.5rem; font-family: var(--font-mono); font-size: 13px; line-height: 2; }
+  .bar { display: flex; gap: 6px; margin-bottom: 1rem; }
+  .dot { width: 12px; height: 12px; border-radius: 50%; }
+  .log-line { display: flex; gap: 0; white-space: pre; }
+  .ts { color: #6e7681; }
+  .lvl-info { color: #58a6ff; font-weight: 500; }
+  .lvl-error { color: #f85149; font-weight: 500; }
+  .msg { color: #c9d1d9; }
+  .cursor { display: inline-block; width: 8px; height: 14px; background: #58a6ff; animation: blink 1s step-end infinite; vertical-align: middle; margin-left: 2px; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+  .progress-bar { height: 2px; background: #21262d; border-radius: 1px; margin: 4px 0 0 22.5ch; overflow: hidden; }
+  .progress-fill { height: 100%; background: #58a6ff; width: 0; transition: width 0.05s linear; }
+</style>
+
+<div class="term">
+  <div class="bar">
+    <div class="dot" style="background:#ff5f57"></div>
+    <div class="dot" style="background:#febc2e"></div>
+    <div class="dot" style="background:#28c840"></div>
+    <span style="color:#6e7681; font-size:12px; margin-left:8px;">terminal — bash</span>
+  </div>
+  <div id="logs"></div>
+</div>
+
+<script>
+const logs = [
+  { ts: "2026-04-02 11:05:23", level: "INFO ", msg: "Initialisation du programme", delay: 400 },
+  { ts: "2026-04-02 11:05:23", level: "INFO ", msg: "Chargement des modules essentiels...", delay: 800, progress: true },
+  { ts: "2026-04-02 11:05:25", level: "INFO ", msg: "Connexion à la base de données...", delay: 2800, progress: true },
+  { ts: "2026-04-02 11:05:28", level: "ERROR", msg: "Le programme s'est arrêté de manière inattendue", delay: 5400 },
+  { ts: "2026-04-02 11:05:28", level: "ERROR", msg: "Erreur 504 : Oups, mon cerveau a crashé quand j'ai pensé à toi 💥🫣", delay: 5900 },
+];
+
+const container = document.getElementById('logs');
+let totalDelay = 0;
+
+logs.forEach((log, i) => {
+  totalDelay += log.delay;
+  setTimeout(() => {
+    const line = document.createElement('div');
+    line.className = 'log-line';
+    const lvlClass = log.level.trim() === 'INFO' ? 'lvl-info' : 'lvl-error';
+    const pad = log.level === 'INFO ' ? '     ' : '    ';
+    line.innerHTML = `<span class="ts">[${log.ts}]</span><span class="${lvlClass}"> ${log.level}</span><span class="msg"> - ${log.msg}</span>`;
+
+    if (log.progress) {
+      const pb = document.createElement('div');
+      pb.className = 'progress-bar';
+      const fill = document.createElement('div');
+      fill.className = 'progress-fill';
+      pb.appendChild(fill);
+      container.appendChild(line);
+      container.appendChild(pb);
+      let w = 0;
+      const nextDelay = (logs[i+1] ? logs[i+1].delay : 500);
+      const steps = 60;
+      const interval = nextDelay / steps;
+      const timer = setInterval(() => {
+        w += 100/steps;
+        fill.style.width = Math.min(w, 100) + '%';
+        if (w >= 100) clearInterval(timer);
+      }, interval);
+    } else {
+      container.appendChild(line);
+    }
+
+    if (i === logs.length - 1) {
+      const cur = document.createElement('div');
+      cur.className = 'log-line';
+      cur.innerHTML = `<span class="ts">                        </span><span class="cursor"></span>`;
+      container.appendChild(cur);
+    }
+  }, totalDelay);
+});
+</script>
