@@ -17,19 +17,21 @@ body {
   flex-direction: column;
 }
 
+/* TERMINAL */
 .terminal {
   flex: 1;
-  padding: 16px;
+  padding: 14px;
   overflow-y: auto;
-  font-size: 13px;
-  line-height: 1.8;
+  font-size: 12.5px;
+  line-height: 1.6;
 }
 
+/* LIGNE */
 .line {
   opacity: 0;
   transform: translateY(4px);
   transition: 0.2s;
-  white-space: pre;
+  margin-bottom: 4px;
 }
 
 .visible {
@@ -37,44 +39,69 @@ body {
   transform: translateY(0);
 }
 
-.ts { color: #6e7681; }
+/* STRUCTURE FLEX → mobile friendly */
+.row {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap; /* ← clé pour mobile */
+}
+
+.ts {
+  color: #6e7681;
+  flex-shrink: 0;
+}
+
+.level {
+  flex-shrink: 0;
+  font-weight: 500;
+}
+
 .info { color: #58a6ff; }
 .error { color: #f85149; }
 .success { color: #3fb950; }
 
+.msg {
+  flex: 1;
+  word-break: break-word; /* ← évite débordement */
+}
+
+/* PROGRESS */
 .progress {
   height: 4px;
   background: #21262d;
-  margin: 4px 0 10px 24ch;
   border-radius: 2px;
   overflow: hidden;
+  margin: 6px 0 10px;
 }
 
 .progress-fill {
   height: 100%;
   background: #58a6ff;
   width: 0%;
-  transition: width 0.1s linear;
 }
 
+/* BUTTON */
 .actions {
   padding: 12px;
   border-top: 1px solid #222;
-  text-align: center;
+  display: flex;
+  justify-content: center;
 }
 
 button {
   background: #238636;
   border: none;
-  padding: 12px 20px;
-  border-radius: 8px;
+  padding: 14px 22px;
+  border-radius: 10px;
   color: white;
-  font-size: 14px;
+  font-size: 15px;
   display: none;
+  width: 100%;
+  max-width: 280px;
 }
 
 button.show {
-  display: inline-block;
+  display: block;
 }
 </style>
 </head>
@@ -125,23 +152,30 @@ function sleep(ms) {
 async function print(level, msg) {
   const line = document.createElement("div");
   line.className = "line";
-  line.innerHTML =
-    `<span class="ts">[${now()}]</span> ` +
-    `<span class="${level.toLowerCase()}">${level.padEnd(5)}</span> ` +
-    `- ${msg}`;
+
+  line.innerHTML = `
+    <div class="row">
+      <span class="ts">[${now()}]</span>
+      <span class="level ${level.toLowerCase()}">${level}</span>
+      <span class="msg">- ${msg}</span>
+    </div>
+  `;
 
   terminal.appendChild(line);
 
   await sleep(30);
   line.classList.add("visible");
+
   terminal.scrollTop = terminal.scrollHeight;
 }
 
 async function progress(duration = 1200) {
   const bar = document.createElement("div");
   bar.className = "progress";
+
   const fill = document.createElement("div");
   fill.className = "progress-fill";
+
   bar.appendChild(fill);
   terminal.appendChild(bar);
 
@@ -174,7 +208,6 @@ async function start() {
 
   await sleep(300);
 
-  // erreur ou succès
   if (step < errorMessages.length) {
     const err = errorMessages[step];
 
