@@ -30,13 +30,13 @@
     align-items: center;
     justify-content: center;
     font-family: 'JetBrains Mono', 'Cascadia Code', 'Fira Code', monospace;
-    padding: 12px;
+    padding: 8px;
   }
 
   .window {
-    width: 100%;
-    max-width: 680px;
-    height: 440px;           /* taille fixe */
+    width: min(680px, calc(100vw - 16px));
+    height: calc(100dvh - 16px);
+    max-height: 760px;
     background: var(--window-bg);
     border: 1px solid var(--border);
     border-radius: 10px;
@@ -78,6 +78,7 @@
   /* ── TERMINAL BODY ── */
   .terminal {
     flex: 1;
+    min-height: 0;
     overflow-y: auto;
     padding: 12px 14px 8px;
     scrollbar-width: thin;
@@ -125,9 +126,36 @@
 
   .msg {
     color: var(--text);
-    word-break: break-word;
+    overflow-wrap: anywhere;
     white-space: pre-wrap;
     flex: 1;
+  }
+
+  .cmd-line {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin-bottom: 2px;
+    font-size: 12px;
+    line-height: 1.6;
+    color: var(--text);
+    opacity: 0;
+    transform: translateY(2px);
+    transition: opacity 0.15s ease, transform 0.15s ease;
+  }
+
+  .cmd-line.visible { opacity: 1; transform: none; }
+
+  .cmd-prompt {
+    color: var(--green);
+    flex-shrink: 0;
+    font-weight: 700;
+  }
+
+  .cmd-text {
+    flex: 1;
+    overflow-wrap: anywhere;
+    white-space: pre-wrap;
   }
 
   /* ── PROGRESS ROW (style log texte) ── */
@@ -154,8 +182,8 @@
   }
 
   .prog-bar {
-    color: var(--blue);
-    letter-spacing: -0.5px;
+    color: var(--text);
+    letter-spacing: 0;
     flex-shrink: 0;
   }
 
@@ -165,6 +193,22 @@
     flex-shrink: 0;
     width: 4ch;
   }
+
+  .prog-pct.ok { color: var(--green); font-weight: 700; }
+  .prog-pct.ko { color: var(--red); font-weight: 700; }
+
+  .status-line {
+    margin-top: 4px;
+    margin-bottom: 2px;
+    font-size: 12px;
+    line-height: 1.5;
+    white-space: pre;
+    overflow: hidden;
+    text-overflow: clip;
+  }
+
+  .status-line.failed { color: var(--red); }
+  .status-line.success { color: var(--green); }
 
   /* ── PUNCHLINE ── */
   .punchline {
@@ -241,13 +285,16 @@
 
   /* ── MOBILE ── */
   @media (max-width: 480px) {
-    html, body { padding: 0; align-items: stretch; }
+    html, body {
+      padding: 6px;
+      align-items: center;
+      justify-content: center;
+    }
 
     .window {
-      border-radius: 0;
-      border-left: none;
-      border-right: none;
-      height: 100svh;
+      width: calc(100vw - 12px);
+      height: calc(100dvh - 12px);
+      border-radius: 8px;
     }
 
     .ts { display: none; }
@@ -274,7 +321,7 @@
   </div>
 
   <div class="actions">
-    <button class="btn" id="retryBtn" onclick="start()">retry</button>
+    <button class="btn show" id="retryBtn" onclick="runAttempt()">start</button>
   </div>
 </div>
 
@@ -284,13 +331,13 @@ const retryBtn = document.getElementById("retryBtn");
 const cursor   = document.getElementById("cursor");
 
 const TOTAL   = 5;   // 4 erreurs + 1 succès
-const BAR_W   = 18;  // largeur barre en caractères
+const BAR_W   = 20;
 
-const attempts = [
-  ["Initialisation du programme",  "Chargement des modules essentiels…", "Connexion aux services…",         "Démarrage des dépendances…"],
-  ["Initialisation du moteur",     "Chargement des plugins…",            "Connexion à la base de données…", "Démarrage des services…"],
-  ["Boot du système",              "Chargement des modules…",            "Vérification de la connexion…",   "Contrôle des dépendances…"],
-  ["Redémarrage du programme",     "Restauration du dernier état…",      "Reconnexion aux services…",       "Initialisation finale…"]
+const steps = [
+  "Initialisation du programme",
+  "Chargement des modules essentiels…",
+  "Connexion aux services…",
+  "Démarrage des dépendances…"
 ];
 
 const errors = [
@@ -300,7 +347,8 @@ const errors = [
   { code: "403 Forbidden",          text: "access denied",                         punchline: "C'est interdit d'être aussi séduisant que toi ou quoi ?"       }
 ];
 
-let step = 0;
+let attempt = 0;
+let running = false;
 
 const now = () => new Date().toLocaleTimeString('fr-FR', { hour12: false });
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -308,7 +356,50 @@ const ins   = el => terminal.insertBefore(el, cursor);
 
 function bar(pct) {
   const f = Math.round(pct / 100 * BAR_W);
-  return "[" + "█".repeat(f) + "░".repeat(BAR_W - f) + "]";
+  return "[" + "#".repeat(f) + "-".repeat(BAR_W - f) + "]";
+}
+
+function setButton(label) {
+  retryBtn.textContent = label;
+  retryBtn.classList.add("show");
+  retryBtn.disabled = false;
+}
+
+function hideButton() {
+  retryBtn.classList.remove("show");
+}
+
+function estimateCols() {
+  const probe = document.createElement("span");
+  probe.style.position = "absolute";
+  probe.style.visibility = "hidden";
+  probe.style.whiteSpace = "pre";
+  probe.textContent = "M";
+  terminal.appendChild(probe);
+  const charW = probe.getBoundingClientRect().width || 7;
+  terminal.removeChild(probe);
+  return Math.max(20, Math.floor((terminal.clientWidth - 2) / charW));
+}
+
+function fullStatusLine(label) {
+  const cols = estimateCols();
+  const core = ` ${label} `;
+  const fill = Math.max(0, cols - core.length);
+  const left = Math.floor(fill / 2);
+  const right = fill - left;
+  return "=".repeat(left) + core + "=".repeat(right);
+}
+
+async function promptLine(text) {
+  const el = document.createElement("div");
+  el.className = "cmd-line";
+  el.innerHTML =
+    `<span class="cmd-prompt">$</span>` +
+    `<span class="cmd-text">${text}</span>`;
+  ins(el);
+  await sleep(20);
+  el.classList.add("visible");
+  terminal.scrollTop = terminal.scrollHeight;
 }
 
 async function log(level, msg) {
@@ -324,7 +415,7 @@ async function log(level, msg) {
   terminal.scrollTop = terminal.scrollHeight;
 }
 
-async function progress(duration) {
+async function progress(duration, failAtPct = null) {
   const row    = document.createElement("div");
   row.className = "prog-line";
 
@@ -354,11 +445,26 @@ async function progress(duration) {
     barEl.textContent = bar(pct);
     pctEl.textContent = pct + "%";
     terminal.scrollTop = terminal.scrollHeight;
+    if (failAtPct !== null && pct >= failAtPct) {
+      pctEl.textContent = "KO";
+      pctEl.classList.add("ko");
+      terminal.scrollTop = terminal.scrollHeight;
+      return false;
+    }
     if (pct >= 100) break;
     await sleep(40);
   }
   pctEl.textContent = "OK";
-  pctEl.style.color = "var(--green)";
+  pctEl.classList.add("ok");
+  terminal.scrollTop = terminal.scrollHeight;
+  return true;
+}
+
+async function statusLine(success) {
+  const el = document.createElement("div");
+  el.className = "status-line " + (success ? "success" : "failed");
+  el.textContent = fullStatusLine(success ? "SUCCESS" : "FAILED");
+  ins(el);
   terminal.scrollTop = terminal.scrollHeight;
 }
 
@@ -376,40 +482,54 @@ async function punchline(text, success) {
   terminal.scrollTop = terminal.scrollHeight;
 }
 
-async function start() {
-  while (terminal.firstChild !== cursor) terminal.removeChild(terminal.firstChild);
-  retryBtn.classList.remove("show");
-  cursor.classList.add("visible");
+async function runAttempt() {
+  if (running) return;
+  running = true;
+  hideButton();
+  cursor.classList.remove("visible");
 
-  const n    = step + 1;
-  const msgs = attempts[step % attempts.length];
+  const n = attempt + 1;
+  const failingStep = attempt < errors.length ? attempt : -1;
 
-  await log("INFO", `Tentative ${n}/${TOTAL} — démarrage…`);
+  await promptLine(`./dumb-program --attempt ${n}`);
+  await log("INFO", `Tentative ${n}/${TOTAL}`);
   await sleep(180);
 
-  for (const msg of msgs) {
-    await log("INFO", msg);
-    await progress(850 + Math.random() * 550);
+  for (let i = 0; i < steps.length; i++) {
+    await log("INFO", steps[i]);
+    const shouldFail = i === failingStep;
+    const ok = await progress(
+      850 + Math.random() * 550,
+      shouldFail ? Math.round(35 + Math.random() * 45) : null
+    );
+
+    if (!ok) {
+      const err = errors[failingStep];
+      await sleep(180);
+      await log("ERROR", `${err.code}: ${err.text}`);
+      await statusLine(false);
+      cursor.classList.remove("visible");
+      await punchline(err.punchline, false);
+
+      attempt++;
+      running = false;
+      setButton("retry");
+      return;
+    }
   }
 
   await sleep(280);
+  await log("SUCCESS", "connection established — all systems nominal");
+  await statusLine(true);
+  cursor.classList.remove("visible");
+  await punchline("On dirait que ça colle bien entre nous.", true);
 
-  if (step < errors.length) {
-    const err = errors[step];
-    await log("ERROR", `${err.code}: ${err.text}`);
-    cursor.classList.remove("visible");
-    await punchline(err.punchline, false);
-    retryBtn.classList.add("show");
-    step++;
-  } else {
-    await log("SUCCESS", "connection established — all systems nominal");
-    cursor.classList.remove("visible");
-    await punchline("On dirait que ça colle bien entre nous.", true);
-    step = 0;
-  }
+  attempt = 0;
+  running = false;
+  setButton("start");
 }
 
-start();
+setButton("start");
 </script>
 </body>
 </html>
