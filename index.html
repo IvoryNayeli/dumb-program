@@ -9,61 +9,53 @@
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
-  background: #000;
+  background: #0d1117;
   color: #c9d1d9;
   font-family: monospace;
   height: 100vh;
   display: flex;
   flex-direction: column;
+  margin: 0;
 }
 
 /* TERMINAL */
 .terminal {
   flex: 1;
-  padding: 14px;
+  padding: 12px;
   overflow-y: auto;
-  font-size: 12.5px;
-  line-height: 1.6;
+  font-size: 13px;
+  line-height: 1.5;
 }
 
 /* LIGNE */
 .line {
-  opacity: 0;
-  transform: translateY(4px);
-  transition: 0.2s;
-  margin-bottom: 4px;
-}
-
-.visible {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-/* STRUCTURE FLEX → mobile friendly */
-.row {
   display: flex;
   gap: 6px;
-  flex-wrap: wrap; /* ← clé pour mobile */
+  opacity: 0;
+  transform: translateY(2px);
+  transition: all 0.2s ease;
+  flex-wrap: wrap;
 }
+
+.visible { opacity: 1; transform: translateY(0); }
 
 .ts {
   color: #6e7681;
   flex-shrink: 0;
+  width: 10ch;
 }
 
 .level {
   flex-shrink: 0;
   font-weight: 500;
+  width: 8ch;
 }
 
 .info { color: #58a6ff; }
 .error { color: #f85149; }
 .success { color: #3fb950; }
 
-.msg {
-  flex: 1;
-  word-break: break-word; /* ← évite débordement */
-}
+.msg { flex: 1; word-break: break-word; }
 
 /* PROGRESS */
 .progress {
@@ -71,38 +63,43 @@ body {
   background: #21262d;
   border-radius: 2px;
   overflow: hidden;
-  margin: 6px 0 10px;
+  margin: 4px 0 8px;
 }
 
-.progress-fill {
-  height: 100%;
-  background: #58a6ff;
-  width: 0%;
+.progress-fill { height: 100%; background: #58a6ff; width: 0%; }
+
+/* PUNCHLINE FINALE */
+.punchline {
+  margin-top: 12px;
+  color: #f85149;
+  font-weight: 600;
+  font-size: 14px;
+  text-align: center;
 }
 
-/* BUTTON */
+/* BUTTON STICKY */
 .actions {
   padding: 12px;
   border-top: 1px solid #222;
   display: flex;
   justify-content: center;
+  background: #0d1117;
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
 }
 
 button {
   background: #238636;
   border: none;
-  padding: 14px 22px;
-  border-radius: 10px;
+  padding: 12px 20px;
+  border-radius: 8px;
   color: white;
-  font-size: 15px;
+  font-size: 14px;
   display: none;
-  width: 100%;
-  max-width: 280px;
 }
 
-button.show {
-  display: block;
-}
+button.show { display: inline-block; cursor: pointer; }
 </style>
 </head>
 
@@ -115,79 +112,64 @@ button.show {
 </div>
 
 <script>
+const terminal = document.getElementById("terminal");
+const retryBtn = document.getElementById("retryBtn");
 
 const errorMessages = [
-  {
-    code: "TypeError",
-    text: "unsupported operand type(s) for +: 'me' and 'loneliness'",
-    punchline: "Je pense que j’ai besoin de toi pour corriger ça."
-  },
-  {
-    code: "AttributeError",
-    text: "'heart' object has no attribute 'control'",
-    punchline: "Depuis que je t’ai vu, c’est le chaos."
-  },
-  {
-    code: "500 Internal Server Error",
-    text: "",
-    punchline: "Désolé, mon cœur bug quand tu me regardes."
-  },
-  {
-    code: "403 Forbidden",
-    text: "",
-    punchline: "C’est interdit d’être aussi séduisant que toi ou quoi ?"
-  }
+  { code: "TypeError", text: "unsupported operand type(s) for +: 'me' and 'loneliness'", punchline: "Je pense que j’ai besoin de toi pour corriger ça." },
+  { code: "AttributeError", text: "'heart' object has no attribute 'control'", punchline: "Depuis que je t’ai vu, c’est le chaos." },
+  { code: "500 Internal Server Error", text: "", punchline: "Désolé, mon cœur bug quand tu me regardes." },
+  { code: "403 Forbidden", text: "", punchline: "C’est interdit d’être aussi séduisant que toi ou quoi ?" }
 ];
 
 let step = 0;
 
 function now() {
-  return new Date().toISOString().replace("T"," ").split(".")[0];
+  const d = new Date();
+  return d.toLocaleTimeString('fr-FR', { hour12: false });
 }
 
-function sleep(ms) {
-  return new Promise(r => setTimeout(r, ms));
-}
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
 async function print(level, msg) {
   const line = document.createElement("div");
   line.className = "line";
-
   line.innerHTML = `
-    <div class="row">
-      <span class="ts">[${now()}]</span>
-      <span class="level ${level.toLowerCase()}">${level}</span>
-      <span class="msg">- ${msg}</span>
-    </div>
+    <span class="ts">[${now()}]</span>
+    <span class="level ${level.toLowerCase()}">${level}</span>
+    <span class="msg">- ${msg}</span>
   `;
-
   terminal.appendChild(line);
-
   await sleep(30);
   line.classList.add("visible");
-
   terminal.scrollTop = terminal.scrollHeight;
 }
 
 async function progress(duration = 1200) {
   const bar = document.createElement("div");
   bar.className = "progress";
-
   const fill = document.createElement("div");
   fill.className = "progress-fill";
-
   bar.appendChild(fill);
   terminal.appendChild(bar);
 
-  let start = Date.now();
-
+  const start = Date.now();
   while (Date.now() - start < duration) {
-    let percent = ((Date.now() - start) / duration) * 100;
-    fill.style.width = percent + "%";
+    fill.style.width = ((Date.now() - start) / duration * 100) + "%";
     await sleep(30);
   }
-
   fill.style.width = "100%";
+  terminal.scrollTop = terminal.scrollHeight;
+}
+
+async function showPunchline(text) {
+  await sleep(400);
+  const el = document.createElement("div");
+  el.className = "punchline";
+  el.textContent = text;
+  terminal.appendChild(el);
+  await sleep(50);
+  terminal.scrollTop = terminal.scrollHeight;
 }
 
 async function start() {
@@ -195,14 +177,11 @@ async function start() {
   retryBtn.classList.remove("show");
 
   await print("INFO", "Initialisation du programme");
-  await sleep(400);
-
+  await sleep(300);
   await print("INFO", "Chargement des modules...");
   await progress(1200);
-
   await print("INFO", "Connexion aux dépendances...");
   await progress(1500);
-
   await print("INFO", "Démarrage des services...");
   await progress(1000);
 
@@ -210,25 +189,18 @@ async function start() {
 
   if (step < errorMessages.length) {
     const err = errorMessages[step];
-
     await print("ERROR", `${err.code}${err.text ? ": " + err.text : ""}`);
-    await sleep(400);
-    await print("ERROR", err.punchline);
-
+    await showPunchline(err.punchline);
     retryBtn.classList.add("show");
     step++;
-
   } else {
     await print("SUCCESS", "Success: connection established");
-    await sleep(400);
-    await print("SUCCESS", "On dirait que ça colle bien entre nous.");
-
+    await showPunchline("On dirait que ça colle bien entre nous.");
     step = 0;
   }
 }
 
 start();
-
 </script>
 
 </body>
