@@ -313,8 +313,17 @@
     align-items: center;
     justify-content: center;
     gap: 14px;
-    padding: 20px;
+    padding: 26px;
     text-align: center;
+  }
+
+  .launcher-panel {
+    width: min(360px, 100%);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: rgba(26,29,36,0.75);
+    padding: 18px 16px;
+    box-shadow: 0 0 0 1px rgba(255,255,255,0.03) inset;
   }
 
   .launcher-title {
@@ -355,18 +364,11 @@
 
 <body>
 <div class="window" id="launcherView">
-  <div class="titlebar">
-    <div class="dots">
-      <div class="dot dot-r"></div>
-      <div class="dot dot-y"></div>
-      <div class="dot dot-g"></div>
-    </div>
-    <div class="title-label">bash — disquette-factory</div>
-  </div>
-
   <div class="launcher-body">
-    <div class="launcher-title">disquette-factory</div>
-    <div class="launcher-sub">Pret a lancer la generation de disquettes de drague.</div>
+    <div class="launcher-panel">
+      <div class="launcher-title">disquette-factory</div>
+      <div class="launcher-sub">Un clic sur start, et le processeur passe en mode flirt intensif.</div>
+    </div>
     <button class="btn show" id="launchBtn" onclick="launchProgram()">start</button>
   </div>
 </div>
@@ -400,8 +402,8 @@ const cursor   = document.getElementById("cursor");
 
 const TOTAL   = 5;   // 4 erreurs + 1 succès
 const BAR_W   = 20;
-const ATTEMPT_BUDGET_MS = 7000;
-const FAIL_PROGRESS_PCT = 45;
+const ATTEMPT_BUDGET_MS = 4500;
+const FAIL_PROGRESS_PCT = 35;
 
 const steps = [
   "init",
@@ -413,7 +415,7 @@ const steps = [
 const errors = [
   { code: "403 Forbidden",            text: "access denied",                                                punchline: "C'est interdit d'etre aussi seduisant que toi ici ou quoi ? 😏❤️" },
   { code: "TypeError",                text: "unsupported operand type(s) for +: 'me' and 'loneliness'", punchline: "Je pense que j'ai besoin de toi pour corriger ca. 😘" },
-  { code: "500 Internal Server Error", text: "unexpected input",                                         punchline: "Désolée, mon cerveau bug quand je pense à toi. 😏❤️😘" },
+  { code: "500 Internal Server Error", text: "unexpected input",                                         punchline: "Désolée, mon cerveau bug quand je pense à toi. 😏❤️" },
   { code: "AttributeError",           text: "'My_Heart' object has no attribute 'control'",                punchline: "Depuis que je t'ai vu, c'est le chaos là-dedans. ❤️‍🔥" }
 ];
 
@@ -572,7 +574,7 @@ async function runAttempt() {
 
   await attemptSeparator();
   await promptLine(`./disquette-factory --tentative ${n}`);
-  await sleep(260);
+  await sleep(120);
 
   for (let i = 0; i < steps.length; i++) {
     await log("INFO", steps[i]);
@@ -585,7 +587,7 @@ async function runAttempt() {
     if (!ok) {
       const err = errors[failingStep];
       await statusLine(false);
-      await sleep(180);
+      await sleep(80);
       await log("ERROR", `${err.code}: ${err.text}`);
       cursor.classList.remove("visible");
       await punchline(err.punchline, false);
@@ -602,7 +604,7 @@ async function runAttempt() {
   await sleep(380);
   await log("SUCCESS", "Connexion etablie");
   cursor.classList.remove("visible");
-  await punchline("On dirait que ça colle bien entre nous. 😏✨", true);
+  await punchline("Mmmh, on dirait que ça colle bien entre nous. 😏✨", true);
 
   attempt = 0;
   running = false;
