@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>dumb-program</title>
+<title>disquette-factory</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&display=swap');
 
@@ -34,9 +34,9 @@
   }
 
   .window {
-    width: min(660px, calc(100vw - 28px));
-    height: calc(100dvh - 28px);
-    max-height: 760px;
+    width: min(560px, calc(100vw - 56px));
+    height: calc(100dvh - 56px);
+    max-height: 640px;
     background: var(--window-bg);
     border: 1px solid var(--border);
     border-radius: 10px;
@@ -307,14 +307,14 @@
   /* ── MOBILE ── */
   @media (max-width: 480px) {
     html, body {
-      padding: 10px;
+      padding: 14px;
       align-items: center;
       justify-content: center;
     }
 
     .window {
-      width: calc(100vw - 20px);
-      height: calc(100dvh - 20px);
+      width: calc(100vw - 28px);
+      height: calc(100dvh - 28px);
       border-radius: 8px;
     }
 
@@ -334,7 +334,7 @@
       <div class="dot dot-y"></div>
       <div class="dot dot-g"></div>
     </div>
-    <div class="title-label">bash — dumb-program</div>
+    <div class="title-label">bash — disquette-factory</div>
   </div>
 
   <div class="terminal" id="terminal">
@@ -355,17 +355,17 @@ const TOTAL   = 5;   // 4 erreurs + 1 succès
 const BAR_W   = 20;
 
 const steps = [
-  "Initialisation du programme",
-  "Chargement des modules essentiels…",
-  "Connexion aux services…",
-  "Démarrage des dépendances…"
+  "init",
+  "modules",
+  "connexion",
+  "services"
 ];
 
 const errors = [
-  { code: "TypeError",              text: "unsupported operand type(s) for +: 'me' and 'loneliness'", punchline: "J'ai besoin de toi pour corriger ça."   },
-  { code: "AttributeError",         text: "'heart' object has no attribute 'control'",                punchline: "Depuis que je t'ai vu, c'est le chaos ici."         },
-  { code: "500 Internal Server Error", text: "unexpected input",                      punchline: "Désolée, mon cœur bug quand tu me regardes."        },
-  { code: "403 Forbidden",          text: "access denied",                         punchline: "C'est interdit d'être aussi séduisant que toi ou quoi ?"       }
+  { code: "TypeError",              text: "unsupported operand type(s) for +: 'me' and 'loneliness'", punchline: "😵💘 J'ai besoin de toi pour corriger ça."   },
+  { code: "AttributeError",         text: "'heart' object has no attribute 'control'",                punchline: "😳💥 Depuis que je t'ai vu, c'est le chaos ici."         },
+  { code: "500 Internal Server Error", text: "unexpected input",                      punchline: "🫠❤️ Désolée, mon cœur bug quand tu me regardes."        },
+  { code: "403 Forbidden",          text: "access denied",                         punchline: "🚫😍 C'est interdit d'être aussi séduisant que toi ou quoi ?"       }
 ];
 
 let attempt = 0;
@@ -509,17 +509,8 @@ async function statusLine(success) {
 }
 
 async function punchline(text, success) {
-  await sleep(520);
-  const cls = success ? "ok" : "err";
-  const el  = document.createElement("div");
-  el.className = "punchline";
-  el.innerHTML =
-    `<span class="punchline-icon ${cls}">${success ? "✓" : "✗"}</span>` +
-    `<span class="punchline-text ${cls}">${text}</span>`;
-  ins(el);
-  await sleep(50);
-  el.classList.add("visible");
-  terminal.scrollTop = terminal.scrollHeight;
+  await sleep(700);
+  await log(success ? "SUCCESS" : "ERROR", text);
 }
 
 async function runAttempt() {
@@ -532,21 +523,21 @@ async function runAttempt() {
   const failingStep = attempt < errors.length ? attempt : -1;
 
   await attemptSeparator(n);
-  await promptLine(`./dumb-program --attempt ${n}`);
-  await sleep(280);
+  await promptLine(`./disquette-factory --attempt ${n}`);
+  await sleep(420);
 
   for (let i = 0; i < steps.length; i++) {
     await log("INFO", steps[i]);
     const shouldFail = i === failingStep;
     const ok = await progress(
-      1300 + Math.random() * 700,
+      2200 + Math.random() * 1400,
       shouldFail ? Math.round(35 + Math.random() * 45) : null
     );
 
     if (!ok) {
       const err = errors[failingStep];
       await statusLine(false);
-      await sleep(220);
+      await sleep(380);
       await log("ERROR", `${err.code}: ${err.text}`);
       cursor.classList.remove("visible");
       await punchline(err.punchline, false);
@@ -558,9 +549,9 @@ async function runAttempt() {
     }
   }
 
-  await sleep(320);
+  await sleep(520);
   await statusLine(true);
-  await sleep(220);
+  await sleep(380);
   await log("SUCCESS", "connection established — all systems nominal");
   cursor.classList.remove("visible");
   await punchline("On dirait que ça colle bien entre nous.", true);
